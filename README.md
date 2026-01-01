@@ -6,7 +6,7 @@ Ce dépôt contient toutes les ressources pour le **THZSmartID** (Lecteur d'alar
 
 Le mode d'emploi pour THZSmartID est disponible dans les langues suivantes :
 
-- **Français** : [Mode d'emploi](docs/fr/Mode_d_emploi.md)
+- **Français** : [Mode d'emploi](docs/fr/mode_d_emploi.md)
 
 ## Contenu du dépôt
 
@@ -31,7 +31,7 @@ Pour l'addon Zigbee2MQTT de Home Assistant :
 
 ## Where to Buy
 
-You can purchase THZReader on [my Webshop](https://(https://thedandco.ovh/)).
+You can purchase THZSmartID on [my Webshop](https://(https://thedandco.ovh/)).
 
 <a href="https://thedandco.ovh/"><img src="https://thedandco.ovh/wp-content/uploads/2025/06/Logo_Fond_Clair.png" alt="I sell on my Webshop" width="200" height="55"></a>
 
