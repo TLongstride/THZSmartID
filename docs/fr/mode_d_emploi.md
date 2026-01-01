@@ -64,7 +64,6 @@ Pour l’addon Zigbee2MQTT de Home Assistant :
 3. Copiez le fichier `THZSmartID.js` dans le dossier `external_converters`.
 4. (Optionnel) Copiez le fichier `THZSmartID.png` dans le dossier `device_icons` si vous souhaitez utiliser une icône personnalisée pour l’appareil.
 5. Redémarrez Zigbee2MQTT.
-6. Dans l’onglet Paramètres, saisissez `device_icons/THZSmartID.png` dans le champ icône pour définir l’icône personnalisée de l’appareil.
 
 Une fois intégré via Zigbee2MQTT, deux entités sont automatiquement créées :
 
@@ -89,7 +88,8 @@ Liste des commandes disponibles via l’entité `text.THZSmartID_action` :
 - ACCEPTED : Valide la lecture avec retour sonore et visuel.
 - REFUSED : Refuse la lecture avec retour sonore et visuel. 
 - ACCEPTED_MUTED : Valide la lecture avec retour visuel uniquement.
-- REFUSED_MUTED : Refuse la lecture avec retour visuel uniquement.  
+- REFUSED_MUTED : Refuse la lecture avec retour visuel uniquement.
+- ARMING : Active le voyant d’alarme en cours d’armement.  
 - ARMED : Active le voyant d’alarme armée.
 - PARTIAL : Active le voyant d’alarme partielle.
 - DISARMED : Active le voyant d’alarme désarmée.
@@ -105,7 +105,7 @@ Liste des commandes disponibles via l’entité `text.THZSmartID_action` :
 1. Cliquez sur le bouton ci-dessous pour importer directement le blueprint dans votre instance Home Assistant.
 2. Configurez les paramètres selon vos besoins.
 
-[![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https://github.com/TLongstride/THZSmartID/blob/main/blueprints/fr/THZSmartID.yaml)
+[![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https://github.com/TLongstride/THZSmartID/blob/main/blueprints/fr/THZSmartID_Alarmo_Connector.yaml)
 
 ## ⚠️ Conseils de sécurité et bonnes pratiques
 

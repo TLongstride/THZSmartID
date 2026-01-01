@@ -1,0 +1,261 @@
+blueprint:
+  name: THZSmartID ↔ Alarmo (UID persistants & options avancées)
+  description: >
+    Ce blueprint permet d'intégrer un lecteur THZSmartID avec le système d'alarme Alarmo de Home Assistant, en offrant une gestion avancée des accès par badge RFID :
+      - Synchronisation automatique de l'état de l'alarme (armé, désarmé, partiel, armement en cours) avec le lecteur.
+      - Validation des badges : seuls les UIDs présents dans la liste autorisée (input_text) peuvent armer/désarmer l'alarme.
+      - Mode ajout/suppression : activez ce mode pour ajouter ou retirer dynamiquement des UIDs autorisés par simple scan de badge.
+      - Retour d'information visuel sur le lecteur (ACCEPTED, REFUSED, ARMING, ARMED, DISARMED, PARTIAL).
+      - Gestion des sons de validation ou de refus selon vos préférences.
+      - Temporisation des voyants pour une meilleure expérience utilisateur.
+      - Configuration simple et sécurisée depuis l'interface Home Assistant.
+
+    Cas d'usage :
+      - Gestion des accès pour les membres du foyer ou du personnel.
+      - Ajout/suppression rapide de badges sans intervention technique.
+      - Sécurité renforcée grâce à la validation centralisée des UIDs.
+
+    Pour utiliser ce blueprint :
+      1. Sélectionnez les entités requises (capteur UID, input_textUIDs, input_boolean inclusion, select commandes, alarme).
+      2. Gérez la liste des UIDs autorisés directement dans Home Assistant ou via le mode inclusion.
+      3. Activez le mode inclusion pour ajouter/retirer des badges par scan.
+      4. Profitez d'une intégration fiable et évolutive entre THZSmartID et Alarmo.
+
+    Version : 1.0 du 01/01/2026 par THED&Co - https://tlongstride.github.io/THZSmartID/
+
+  domain: automation
+
+  input:
+    uid_sensor:
+      name: Capteur UID du périphérique THZSmartID
+      selector:
+        entity:
+          domain: sensor
+
+    alarm_entity:
+      name: Entité Alarmo
+      selector:
+        entity:
+          domain: alarm_control_panel
+
+    command_entity:
+      name: Commandes du périphérique THZSmartID
+      selector:
+        entity:
+          domain: select
+
+    uids_text:
+      name: Input_text UID autorisés
+      description: UIDs séparés par des virgules
+      selector:
+        entity:
+          domain: input_text
+
+    inclusion_mode:
+      name: Mode ajout/suppression UID
+      selector:
+        entity:
+          domain: input_boolean
+
+    arm_mode:
+      name: Mode d’armement à l’activation
+      default: home
+      selector:
+        select:
+          options:
+            - home
+            - away
+
+    accepted_sound:
+      name: Son validation
+      default: ACCEPTED_MUTED
+      selector:
+        select:
+          options:
+            - ACCEPTED
+            - ACCEPTED_MUTED
+
+    refused_sound:
+      name: Son refus
+      default: REFUSED_MUTED
+      selector:
+        select:
+          options:
+            - REFUSED
+            - REFUSED_MUTED
+
+    led_timeout:
+      name: Durée voyants (secondes)
+      description: 0 = infini
+      default: 5
+      selector:
+        number:
+          min: 0
+          max: 180
+          unit_of_measurement: s
+
+mode: restart
+
+trigger:
+  # Carte présentée
+  - platform: state
+    entity_id: !input uid_sensor
+    to: ~
+
+  # Synchronisation voyants depuis Alarmo
+  - platform: state
+    entity_id: !input alarm_entity
+
+variables:
+  uid_sensor_entity: !input uid_sensor
+  alarm_entity: !input alarm_entity
+  command_entity: !input command_entity
+  uids_text_entity: !input uids_text
+  inclusion_mode_entity: !input inclusion_mode
+  arm_mode: !input arm_mode
+  accepted_sound: !input accepted_sound
+  refused_sound: !input refused_sound
+  led_timeout: !input led_timeout
+
+  uid: "{{ states(uid_sensor_entity) }}"
+  uids_list: >
+    {{ states(uids_text_entity)
+       .split(',')
+       | map('trim')
+       | reject('equalto','')
+       | list }}
+
+condition:
+  - condition: template
+    value_template: >
+      {{ trigger.entity_id != uid_sensor_entity
+         or uid not in ['', 'unknown', 'unavailable', 'None', 'none'] }}
+
+action:
+  - choose:
+
+      ####################################################
+      # 🔁 SYNC VOYANTS ← ÉTAT ALARMO
+      ####################################################
+      - conditions: "{{ trigger.entity_id == alarm_entity }}"
+        sequence:
+          - choose:
+              - conditions: "{{ is_state(alarm_entity, 'disarmed') }}"
+                sequence:
+                  - service: select.select_option
+                    target:
+                      entity_id: "{{ command_entity }}"
+                    data:
+                      option: "DISARMED"
+
+              - conditions: "{{ is_state(alarm_entity, 'armed_away') }}"
+                sequence:
+                  - service: select.select_option
+                    target:
+                      entity_id: "{{ command_entity }}"
+                    data:
+                      option: "ARMED"
+
+              - conditions: "{{ is_state(alarm_entity, 'armed_home') or is_state(alarm_entity, 'armed_night') }}"
+                sequence:
+                  - service: select.select_option
+                    target:
+                      entity_id: "{{ command_entity }}"
+                    data:
+                      option: "PARTIAL"
+
+              - conditions: "{{ is_state(alarm_entity, 'arming') }}"
+                sequence:
+                  - service: select.select_option
+                    target:
+                      entity_id: "{{ command_entity }}"
+                    data:
+                      option: "ARMING"
+          # ⏱️ Extinction voyants après synchronisation HA
+          - choose:
+              - conditions: "{{ led_timeout | int > 0 and not is_state(alarm_entity, 'arming') }}"
+                sequence:
+                  - delay:
+                      seconds: "{{ led_timeout | int }}"
+                  - service: select.select_option
+                    target:
+                      entity_id: "{{ command_entity }}"
+                    data:
+                      option: "OFF"
+
+      ####################################################
+      # ➕➖ MODE INCLUSION
+      ####################################################
+      - conditions: "{{ is_state(inclusion_mode_entity, 'on') }}"
+        sequence:
+          - service: input_text.set_value
+            data:
+              entity_id: "{{ uids_text_entity }}"
+              value: >
+                {% if uid in uids_list %}
+                  {{ uids_list | reject('equalto', uid) | join(',') }}
+                {% else %}
+                  {{ (uids_list + [uid]) | join(',') }}
+                {% endif %}
+          - stop: "UID ajouté ou retiré (mode inclusion)"
+
+      ####################################################
+      # ✅ CARTE VALIDE
+      ####################################################
+      - conditions: "{{ uid in uids_list }}"
+        sequence:
+          - service: select.select_option
+            target:
+              entity_id: "{{ command_entity }}"
+            data:
+              option: "{{ accepted_sound }}"
+
+          - choose:
+              # Armement
+              - conditions: "{{ is_state(alarm_entity, 'disarmed') }}"
+                sequence:
+                  - service: >
+                      alarm_control_panel.alarm_arm_{{ 'away' if arm_mode == 'away' else 'home' }}
+                    target:
+                      entity_id: "{{ alarm_entity }}"
+
+              # Désarmement
+              - conditions: "{{ not is_state(alarm_entity, 'disarmed') }}"
+                sequence:
+                  - service: alarm_control_panel.alarm_disarm
+                    target:
+                      entity_id: "{{ alarm_entity }}"
+
+          # Extinction voyants temporisée
+          - choose:
+              - conditions: "{{ led_timeout | int > 0 }}"
+                sequence:
+                  - delay:
+                      seconds: "{{ led_timeout | int }}"
+                  - service: select.select_option
+                    target:
+                      entity_id: "{{ command_entity }}"
+                    data:
+                      option: "OFF"
+
+      ####################################################
+      # ❌ CARTE INVALIDE
+      ####################################################
+      - conditions: "{{ uid not in uids_list }}"
+        sequence:
+          - service: select.select_option
+            target:
+              entity_id: "{{ command_entity }}"
+            data:
+              option: "{{ refused_sound }}"
+
+          - choose:
+              - conditions: "{{ led_timeout | int > 0 }}"
+                sequence:
+                  - delay:
+                      seconds: "{{ led_timeout | int }}"
+                  - service: select.select_option
+                    target:
+                      entity_id: "{{ command_entity }}"
+                    data:
+                      option: "OFF"
