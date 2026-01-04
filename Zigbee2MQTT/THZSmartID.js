@@ -2,6 +2,7 @@
 // This file is used to define the device's capabilities, exposes, and converters.
 
 // Version: 1.0 - 03/11/2025 - Initial release
+// Version: 1.1 - 10/11/2025 - Added list of supported commands
 
 // License: Creative Commons BY-NC 4.0
 // Author: THED&Co
@@ -55,7 +56,7 @@ const fzLocal = {
 
 const tzLocal = {
     THZWrite: {
-        key: ["action"],
+        key: ["action", "command"],
         convertSet: async (entity, key, value, meta) => {
             if (!value) {
                 return;
@@ -84,7 +85,8 @@ export default {
         presets.binary("tag", access.STATE, true, false).withDescription("Tag present status (e.g., true, false)"),
         presets.text("type", access.STATE).withDescription("Type of the read RFID tag"),
         presets.text("uid", access.STATE).withDescription("UID of the read RFID tag"),
-        presets.text("action", access.SET).withDescription("Send command to device"),
+        presets.enum("command", access.STATE_SET, ["OFF", "ACCEPTED", "REFUSED", "ACCEPTED_MUTED", "REFUSED_MUTED", "ARMING", "ARMED", "PARTIAL", "DISARMED"]).withDescription("Send command to device"),
+
     ],
     configure: async (device, coordinatorEndpoint, definition) => {
         const endpoint = device.getEndpoint(1);
