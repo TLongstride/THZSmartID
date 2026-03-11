@@ -3,6 +3,7 @@
 
 // Version: 1.0 - 03/11/2025 - Initial release
 // Version: 1.1 - 10/11/2025 - Added list of supported commands
+// Version: 1.2 - 11/03/2026 - Fix 2.9 converter brakage
 
 // License: Creative Commons BY-NC 4.0
 // Author: THED&Co
@@ -56,7 +57,7 @@ const fzLocal = {
 
 const tzLocal = {
     THZWrite: {
-        key: ["action", "command"],
+        key: ["action", "device_command"],
         convertSet: async (entity, key, value, meta) => {
             if (!value) {
                 return;
@@ -85,7 +86,7 @@ export default {
         presets.binary("tag", access.STATE, true, false).withDescription("Tag present status (e.g., true, false)"),
         presets.text("type", access.STATE).withDescription("Type of the read RFID tag"),
         presets.text("uid", access.STATE).withDescription("UID of the read RFID tag"),
-        presets.enum("command", access.STATE_SET, ["OFF", "ACCEPTED", "REFUSED", "ACCEPTED_MUTED", "REFUSED_MUTED", "ARMING", "ARMED", "PARTIAL", "DISARMED"]).withDescription("Send command to device"),
+        presets.enum("device_command", access.STATE_SET, ["OFF", "ACCEPTED", "REFUSED", "ACCEPTED_MUTED", "REFUSED_MUTED", "ARMING", "ARMED", "PARTIAL", "DISARMED"]).withDescription("Send command to device"),
 
     ],
     configure: async (device, coordinatorEndpoint, definition) => {
